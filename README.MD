@@ -1,4 +1,4 @@
-# 🪊 VissmannCollect – Viessmann Wärmepumpen-Datenlogger
+# 🧊 VissmannCollect – Viessmann Wärmepumpen-Datenlogger
 
 > **VissmannCollect** liest Messwerte einer Viessmann Wärmepumpe (Vitocal / Vitodens / Heat Pump) über die
 > neue Viessmann IoT API (v2) aus und speichert sie in einer SQL-Datenbank.
@@ -44,6 +44,7 @@ vissmanncollect/
 ├─ out/                # (wird erzeugt) CSV-Exports aller Features
 ├─ requirements.txt
 ├─ docker-compose.yml
+├─ docker-compose.db.yml
 ├─ Dockerfile
 └─ .env.example
 ```
@@ -68,7 +69,7 @@ vissmanncollect/
 ```env
 CLIENT_ID=<deine_client_id>
 REDIRECT_URI=http://localhost:53682/callback
-GATEWAY_SERIAL=<Dein Gateway Serial>
+GATEWAY_SERIAL=7637415006629235
 DEVICE_ID=0
 POLL_MINUTES=5
 
@@ -80,6 +81,62 @@ MYSQL_ROOT_PASSWORD=<root_pw>
 
 DATABASE_URL=mysql+pymysql://vitoapp:<starkes_passwort>@db:3306/vitocal
 ```
+
+---
+
+### 🐋 Docker-Compose Varianten
+
+There are **two ways** to run the container setup, depending on whether you already have a MySQL database or want to use the bundled one.
+
+#### ▶️ Option A – Use existing MySQL database
+
+Use only the base Compose file:
+
+```bash
+docker compose up -d
+```
+
+This expects a valid `DATABASE_URL` in your `.env`, e.g.:
+
+```env
+DATABASE_URL=mysql+pymysql://user:pass@mydbhost:3306/vitocal
+```
+
+The app container will connect to this external database and insert the logged data there.
+
+---
+
+#### 🧱 Option B – Run with bundled MySQL
+
+Use both Compose files (base + overlay):
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.db.yml up -d
+```
+
+This starts a local MySQL 8 container with the schema defined in `sql/vitodata.sql`.
+
+Default credentials (configurable via `.env`):
+
+```env
+MYSQL_DATABASE=vitocal
+MYSQL_USER=vitoapp
+MYSQL_PASSWORD=<strong_password>
+MYSQL_ROOT_PASSWORD=<root_pw>
+DATABASE_URL=mysql+pymysql://vitoapp:<strong_password>@db:3306/vitocal
+```
+
+On the first run the database schema is automatically initialized.
+Your sensor data will be persisted in the MySQL volume `db_data`.
+
+---
+
+#### 💡 Tip
+
+You can freely switch between the two modes:
+
+* **Existing DB:** use only `docker-compose.yml`
+* **Local DB:** add the overlay `docker-compose.db.yml`
 
 ---
 
@@ -198,7 +255,7 @@ ORDER BY timestamp DESC;
 ## 🪪 Lizenz
 
 **MIT License**
-(c) 2025 Matthias Staud / GitHub-Handle
+(c) 2025 Matthias Staud 
 
 Siehe [`LICENSE`](LICENSE)
 
